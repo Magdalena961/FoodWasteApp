@@ -5,7 +5,7 @@ from streamlit.components.v1 import html
 
 st.set_page_config(page_title="FoodWasteApp", layout="wide")
 
-# Stylizacja CSS
+# Stylizacja CSS – styl boho i elegancki
 st.markdown("""
     <style>
         .main-header {
@@ -167,9 +167,7 @@ elif page == "🍽️ Przepisy":
     if not matched:
         st.info("Dodaj produkty, aby zobaczyć pasujące przepisy")
 
-# Stopka
 st.markdown("""
     <hr>
     <p style='text-align: center; font-size: 0.8em;'>FoodWasteApp – prototyp aplikacji dyplomowej do walki z marnowaniem żywności</p>
 """, unsafe_allow_html=True)
-
