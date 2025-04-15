@@ -1,7 +1,3 @@
-import streamlit as st
-from datetime import date, timedelta
-
-st.set_page_config(page_title="DiaPlan", layout="wide")
 
 # Stylizacja
 st.markdown("""
