@@ -75,24 +75,20 @@ page = st.selectbox("Wybierz sekcję", ["📋 Produkty", "📚 Porady", "📊 St
 if page == "📋 Produkty":
     st.subheader("📋 Twoje produkty")
     if st.session_state.products:
-        df = pd.DataFrame(st.session_state.products)
         today = datetime.date.today()
-        df["Status"] = df["Data ważności"].apply(
-            lambda x: "⚠️ Dziś" if x == today else ("🕓 Wkrótce" if x <= today + datetime.timedelta(days=2) else "✅ OK")
-        )
+        display_data = []
 
-        df["Zaznacz"] = [
-            st.checkbox("", key=f"cb_{i}", value=i in st.session_state.selected_products)
-            for i in range(len(df))
-        ]
-
-        for i in range(len(df)):
-            if st.session_state.get(f"cb_{i}", False):
-                st.session_state.selected_products.add(i)
-            else:
-                st.session_state.selected_products.discard(i)
-
-        st.dataframe(df.drop(columns="Zaznacz").sort_values(by="Data ważności"), use_container_width=True)
+        for i, product in enumerate(st.session_state.products):
+            status = "⚠️ Dziś" if product["Data ważności"] == today else ("🕓 Wkrótce" if product["Data ważności"] <= today + datetime.timedelta(days=2) else "✅ OK")
+            col1, col2 = st.columns([0.1, 0.9])
+            with col1:
+                checked = st.checkbox("", key=f"cb_{i}", value=i in st.session_state.selected_products)
+                if checked:
+                    st.session_state.selected_products.add(i)
+                else:
+                    st.session_state.selected_products.discard(i)
+            with col2:
+                st.markdown(f"**{i+1}. {product['Nazwa']}** – {product['Ilość']} {product['Jednostka']} (ważne do: {product['Data ważności']}) – {status}")
 
         st.markdown("---")
         names = [f"{idx + 1}. {p['Nazwa']} ({p['Data ważności']})" for idx, p in enumerate(st.session_state.products)]
@@ -103,7 +99,12 @@ if page == "📋 Produkty":
                 removed = st.session_state.products.pop(index)
                 st.success(f"Usunięto: {removed['Nazwa']}")
 
-        csv = df.drop(columns="Zaznacz").to_csv(index=False).encode("utf-8")
+        if st.button("♻️ Wyczyść listę"):
+            st.session_state.products = []
+            st.success("Wyczyszczono wszystkie produkty.")
+
+        df = pd.DataFrame(st.session_state.products)
+        csv = df.to_csv(index=False).encode("utf-8")
         st.download_button("📥 Pobierz CSV", data=csv, file_name="produkty.csv", mime="text/csv")
     else:
         st.info("Brak produktów. Dodaj coś w menu bocznym!")
