@@ -1,15 +1,40 @@
 import streamlit as st
 import pandas as pd
 import datetime
-from streamlit_extras.colored_header import colored_header
+from streamlit.components.v1 import html
 
 st.set_page_config(page_title="FoodWasteApp", layout="wide")
 
-# Nagłówek z hierarchią
+# Stylizacja CSS – styl boho i elegancki
 st.markdown("""
-    <h2 style='text-align: center; color: #2e7d32;'>FoodWasteApp</h2>
-    <h4 style='text-align: center; color: #555;'>Ogranicz marnowanie żywności</h4>
-    <p style='text-align: center; color: #888;'>Kontroluj produkty, planuj zakupy i zużycie, ogranicz straty</p>
+    <style>
+        .main-header {
+            text-align: center;
+            color: #2e7d32;
+            font-size: 3em;
+            font-weight: bold;
+            font-family: 'Georgia', serif;
+            margin-top: 0.5em;
+        }
+        .sub-header {
+            text-align: center;
+            color: #8d6e63;
+            font-size: 1.2em;
+            font-style: italic;
+        }
+        .desc-text {
+            text-align: center;
+            color: #a1887f;
+            font-size: 0.9em;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# Nagłówek
+st.markdown("""
+    <div class='main-header'>FoodWasteApp</div>
+    <div class='sub-header'>Ogranicz marnowanie żywności</div>
+    <div class='desc-text'>Zarządzaj produktami spożywczymi, planuj zakupy i zmniejsz straty</div>
     <br>
 """, unsafe_allow_html=True)
 
@@ -17,7 +42,7 @@ st.markdown("""
 if "products" not in st.session_state:
     st.session_state.products = []
 
-# Sekcja dodawania produktów
+# Sidebar: dodawanie produktów
 with st.sidebar:
     st.header("➕ Dodaj produkt")
     name = st.text_input("Nazwa produktu")
@@ -32,11 +57,12 @@ with st.sidebar:
             })
             st.success(f"Dodano: {name}")
 
-# Zakładki główne
-page = st.selectbox("Wybierz sekcję", ["📋 Produkty", "📚 Porady", "📊 Statystyki"])
+# Zakładki
+page = st.selectbox("Wybierz sekcję", ["📋 Produkty", "📚 Porady", "📊 Statystyki", "🍽️ Przepisy"])
 
+# Sekcja produktów
 if page == "📋 Produkty":
-    st.header("📋 Produkty w lodówce")
+    st.subheader("📋 Produkty w lodówce")
     if st.session_state.products:
         df = pd.DataFrame(st.session_state.products)
         today = datetime.date.today()
@@ -59,8 +85,9 @@ if page == "📋 Produkty":
     else:
         st.info("Brak produktów. Dodaj coś w menu bocznym!")
 
+# Sekcja porad
 elif page == "📚 Porady":
-    st.header("📚 Pomysły i wskazówki")
+    st.subheader("📚 Pomysły i wskazówki")
 
     ideas = {
         "mleko": "Zrób koktajl lub naleśniki",
@@ -86,23 +113,60 @@ elif page == "📚 Porady":
         "Sprawdzaj daty ważności",
         "Zamrażaj jedzenie",
         "Wykorzystuj resztki",
-        "Nie kupuj na zapas bez potrzeby"
+        "Nie kupuj na zapas bez potrzeby",
+        "Planuj posiłki z wyprzedzeniem",
+        "Przechowuj żywność w odpowiednich warunkach",
+        "Oznacz produkty etykietami z datą zakupu",
+        "Przygotowuj dania z resztek jedzenia",
+        "Przekazuj nadmiar jedzenia potrzebującym",
+        "Regularnie przeglądaj zawartość lodówki",
+        "Dziel się jedzeniem z sąsiadami lub znajomymi"
     ]
     for tip in tips:
         st.markdown(f"✅ {tip}")
 
+# Sekcja statystyk
 elif page == "📊 Statystyki":
-    st.header("📊 Statystyki")
+    st.subheader("📊 Statystyki")
     total = len(st.session_state.products)
     today = datetime.date.today()
     expiring_today = sum(1 for p in st.session_state.products if p["Data ważności"] == today)
     expiring_soon = sum(1 for p in st.session_state.products if today < p["Data ważności"] <= today + datetime.timedelta(days=2))
 
-    st.metric("📦 Liczba produktów", total)
-    st.metric("⏳ Wygasające dziś", expiring_today)
-    st.metric("⚠️ Wkrótce wygasną", expiring_soon)
+    col1, col2, col3 = st.columns(3)
+    col1.metric("📦 Liczba produktów", total)
+    col2.metric("⏳ Wygasające dziś", expiring_today)
+    col3.metric("⚠️ Wkrótce wygasną", expiring_soon)
+
+# Sekcja przepisów
+elif page == "🍽️ Przepisy":
+    st.subheader("🍽️ Propozycje przepisów na podstawie Twoich produktów")
+    available = [p["Nazwa"].lower() for p in st.session_state.products]
+    recipes = {
+        "banany": "Chlebek bananowy lub smoothie z bananem",
+        "jajka": "Omlet z warzywami lub jajka na twardo",
+        "ser": "Makaron z serem lub zapiekanka serowa",
+        "chleb": "Tosty francuskie, grzanki lub kanapki",
+        "mleko": "Naleśniki mleczne lub owsianka",
+        "ziemniaki": "Zapiekanka ziemniaczana lub frytki",
+        "pomidor": "Zupa pomidorowa lub bruschetta",
+        "papryka": "Leczo warzywne lub faszerowana papryka",
+        "ryż": "Ryż z warzywami lub risotto",
+        "makaron": "Makaron z sosem pomidorowym",
+        "kurczak": "Kurczak pieczony lub curry z kurczakiem"
+    }
+    matched = [f"👉 {desc}" for name, desc in recipes.items() if name in available]
+
+    if matched:
+        for r in matched:
+            st.markdown(r)
+    else:
+        st.info("Dodaj produkty, aby zobaczyć pasujące przepisy")
 
 st.markdown("""
+    <hr>
+    <p style='text-align: center; font-size: 0.8em;'>FoodWasteApp – prototyp aplikacji dyplomowej do walki z marnowaniem żywności</p>
+""", unsafe_allow_html=True)
     <hr>
     <p style='text-align: center; font-size: 0.8em;'>FoodWasteApp – prototyp aplikacji dyplomowej do walki z marnowaniem żywności</p>
 """, unsafe_allow_html=True)
