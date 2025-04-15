@@ -74,12 +74,12 @@ if page == "📋 Produkty":
         st.dataframe(df.sort_values(by="Data ważności"), use_container_width=True)
 
         st.markdown("---")
-        names = [f"{i+1}. {p['Nazwa']} ({p['Data ważności']})" for i, p in enumerate(st.session_state.products)]
+        names = [f"{idx + 1}. {p['Nazwa']} ({p['Data ważności']})" for idx, p in enumerate(st.session_state.products)]
         to_delete = st.selectbox("Usuń produkt", options=["---"] + names)
         if to_delete != "---":
             index = names.index(to_delete)
             if st.button("🗑️ Usuń"):
-                removed = st.session_state.products.pop(index)
+                removed = st.session_state.products.pop(index - 1)
                 st.success(f"Usunięto: {removed['Nazwa']}")
 
         csv = df.to_csv(index=False).encode("utf-8")
