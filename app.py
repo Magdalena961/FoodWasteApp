@@ -62,7 +62,7 @@ page = st.selectbox("Wybierz sekcję", ["📋 Produkty", "📚 Porady", "📊 St
 
 # Sekcja produktów
 if page == "📋 Produkty":
-    st.subheader("📋 Produkty w lodówce")
+    st.subheader("📋 Twoje produkty")
     if st.session_state.products:
         df = pd.DataFrame(st.session_state.products)
         today = datetime.date.today()
