@@ -5,7 +5,7 @@ from streamlit.components.v1 import html
 
 st.set_page_config(page_title="FoodWasteApp", layout="wide")
 
-# Stylizacja CSS – styl boho i elegancki
+# Stylizacja CSS
 st.markdown("""
     <style>
         .main-header {
@@ -77,9 +77,9 @@ if page == "📋 Produkty":
         names = [f"{idx + 1}. {p['Nazwa']} ({p['Data ważności']})" for idx, p in enumerate(st.session_state.products)]
         to_delete = st.selectbox("Usuń produkt", options=["---"] + names)
         if to_delete != "---":
-            index = names.index(to_delete)
+            index = int(to_delete.split(".")[0]) - 1
             if st.button("🗑️ Usuń"):
-                removed = st.session_state.products.pop(index - 1)
+                removed = st.session_state.products.pop(index)
                 st.success(f"Usunięto: {removed['Nazwa']}")
 
         csv = df.to_csv(index=False).encode("utf-8")
@@ -167,7 +167,9 @@ elif page == "🍽️ Przepisy":
     if not matched:
         st.info("Dodaj produkty, aby zobaczyć pasujące przepisy")
 
+# Stopka
 st.markdown("""
     <hr>
     <p style='text-align: center; font-size: 0.8em;'>FoodWasteApp – prototyp aplikacji dyplomowej do walki z marnowaniem żywności</p>
 """, unsafe_allow_html=True)
+
