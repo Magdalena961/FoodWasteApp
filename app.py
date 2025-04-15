@@ -53,7 +53,8 @@ with st.sidebar:
         if name:
             st.session_state.products.append({
                 "Nazwa": name,
-                "Ilość": f"{quantity} {unit}",
+                "Ilość": quantity,
+                "Jednostka": unit,
                 "Data ważności": expiry,
                 "IG": gly_index
             })
@@ -75,7 +76,7 @@ if page == "📋 Produkty":
             elif p["Data ważności"] <= today + timedelta(days=2):
                 status = "🕓 Wkrótce"
 
-            st.markdown(f"{i}. **{p['Nazwa']}** – ilość: {p['Ilość']}, IG: {p['IG']}, ważność: {p['Data ważności']} – {status}")
+            st.markdown(f"{i}. **{p['Nazwa']}** – ilość: {p['Ilość']} {p['Jednostka']}, IG: {p['IG']}, ważność: {p['Data ważności']} – {status}")
 
         options = [f"{i+1}. {p['Nazwa']} ({p['Data ważności']})" for i, p in enumerate(st.session_state.products)]
         to_delete = st.selectbox("Usuń produkt", ["---"] + options)
