@@ -74,3 +74,4 @@ st.markdown("""
     <hr>
     <p style='text-align: center; font-size: 0.8em;'>DiaPlan – automatyzacja diety dla osób z cukrzycą – prototyp pracy dyplomowej</p>
 """, unsafe_allow_html=True)
+
