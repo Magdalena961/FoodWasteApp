@@ -76,18 +76,9 @@ if page == "📋 Produkty":
     st.subheader("📋 Twoje produkty")
     if st.session_state.products:
         today = datetime.date.today()
-
-        for i, product in enumerate(st.session_state.products):
-            status = "⚠️ Dziś" if product["Data ważności"] == today else ("🕓 Wkrótce" if product["Data ważności"] <= today + datetime.timedelta(days=2) else "✅ OK")
-            col1, col2 = st.columns([0.05, 0.95])
-            with col1:
-                checked = st.checkbox("", key=f"cb_{i}", value=i in st.session_state.selected_products)
-                if checked:
-                    st.session_state.selected_products.add(i)
-                else:
-                    st.session_state.selected_products.discard(i)
-            with col2:
-                st.markdown(f"**{product['Nazwa']}** – {product['Ilość']} {product['Jednostka']} (ważne do: {product['Data ważności']}) – {status}")
+        df = pd.DataFrame(st.session_state.products)
+        df["Status"] = df["Data ważności"].apply(lambda x: "⚠️ Dziś" if x == today else ("🕓 Wkrótce" if x <= today + datetime.timedelta(days=2) else "✅ OK"))
+        st.dataframe(df)
 
         st.markdown("---")
         names = [f"{p['Nazwa']} ({p['Data ważności']})" for p in st.session_state.products]
@@ -164,7 +155,7 @@ elif page == "📊 Statystyki":
 # Sekcja przepisów
 elif page == "🍽️ Przepisy":
     st.subheader("🍽️ Propozycje przepisów na podstawie zaznaczonych produktów")
-    selected = [st.session_state.products[i]["Nazwa"].lower() for i in st.session_state.selected_products]
+    selected = [p["Nazwa"].lower() for i, p in enumerate(st.session_state.products) if i in st.session_state.selected_products]
 
     recipes = {
         "banany": ["Chlebek bananowy", "https://source.unsplash.com/600x400/?banana,bread"],
