@@ -1,3 +1,7 @@
+import streamlit as st
+from datetime import date, timedelta
+
+st.set_page_config(page_title="DiaPlan", layout="wide")
 
 # Stylizacja
 st.markdown("""
@@ -88,6 +92,7 @@ elif page == "🍱 Propozycje":
     if ig_low:
         st.markdown("### Propozycje dań z produktów o niskim IG:")
         for p in ig_low:
+            st.image("https://source.unsplash.com/400x300/?healthy,meal", use_column_width=True)
             st.markdown(f"- Sałatka z {p['Nazwa']}, gotowane warzywa lub zupa krem")
     else:
         st.info("Dodaj produkty z niskim IG, aby zobaczyć propozycje")
@@ -100,7 +105,11 @@ elif page == "📚 Porady":
         "Spożywaj dużo błonnika (warzywa, pełnoziarniste produkty)",
         "Pij wodę zamiast słodzonych napojów",
         "Unikaj przetworzonych produktów",
-        "Czytaj etykiety i sprawdzaj zawartość cukru"
+        "Czytaj etykiety i sprawdzaj zawartość cukru",
+        "Planuj zakupy z listą, by nie kupować nadmiarowo",
+        "Przechowuj jedzenie w odpowiednich warunkach",
+        "Wykorzystuj resztki do robienia nowych potraw",
+        "Mroź nadmiar żywności – to przedłuża świeżość"
     ]
     for tip in tips:
         st.markdown(f"✅ {tip}")
