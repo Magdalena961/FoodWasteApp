@@ -42,6 +42,9 @@ st.markdown("""
 if "products" not in st.session_state:
     st.session_state.products = []
 
+if "selected_products" not in st.session_state:
+    st.session_state.selected_products = set()
+
 # Usuwanie przeterminowanych produktów
 today = datetime.date.today()
 st.session_state.products = [
@@ -77,7 +80,19 @@ if page == "📋 Produkty":
         df["Status"] = df["Data ważności"].apply(
             lambda x: "⚠️ Dziś" if x == today else ("🕓 Wkrótce" if x <= today + datetime.timedelta(days=2) else "✅ OK")
         )
-        st.dataframe(df.sort_values(by="Data ważności"), use_container_width=True)
+
+        df["Zaznacz"] = [
+            st.checkbox("", key=f"cb_{i}", value=i in st.session_state.selected_products)
+            for i in range(len(df))
+        ]
+
+        for i in range(len(df)):
+            if st.session_state.get(f"cb_{i}", False):
+                st.session_state.selected_products.add(i)
+            else:
+                st.session_state.selected_products.discard(i)
+
+        st.dataframe(df.drop(columns="Zaznacz").sort_values(by="Data ważności"), use_container_width=True)
 
         st.markdown("---")
         names = [f"{idx + 1}. {p['Nazwa']} ({p['Data ważności']})" for idx, p in enumerate(st.session_state.products)]
@@ -88,7 +103,7 @@ if page == "📋 Produkty":
                 removed = st.session_state.products.pop(index)
                 st.success(f"Usunięto: {removed['Nazwa']}")
 
-        csv = df.to_csv(index=False).encode("utf-8")
+        csv = df.drop(columns="Zaznacz").to_csv(index=False).encode("utf-8")
         st.download_button("📥 Pobierz CSV", data=csv, file_name="produkty.csv", mime="text/csv")
     else:
         st.info("Brak produktów. Dodaj coś w menu bocznym!")
@@ -148,8 +163,9 @@ elif page == "📊 Statystyki":
 
 # Sekcja przepisów
 elif page == "🍽️ Przepisy":
-    st.subheader("🍽️ Propozycje przepisów na podstawie Twoich produktów")
-    available = [p["Nazwa"].lower() for p in st.session_state.products]
+    st.subheader("🍽️ Propozycje przepisów na podstawie zaznaczonych produktów")
+    selected = [st.session_state.products[i]["Nazwa"].lower() for i in st.session_state.selected_products]
+
     recipes = {
         "banany": ["Chlebek bananowy", "https://source.unsplash.com/600x400/?banana,bread"],
         "jajka": ["Omlet z warzywami", "https://source.unsplash.com/600x400/?omelette"],
@@ -163,15 +179,16 @@ elif page == "🍽️ Przepisy":
         "makaron": ["Makaron z sosem", "https://source.unsplash.com/600x400/?pasta"],
         "kurczak": ["Kurczak pieczony", "https://source.unsplash.com/600x400/?roast,chicken"]
     }
+
     matched = False
     for name, (desc, img_url) in recipes.items():
-        if name in available:
-            st.image(img_url, use_column_width=True)
+        if name in selected:
+            st.image(img_url, use_container_width=True)
             st.markdown(f"### 🍽️ {desc}")
             matched = True
 
     if not matched:
-        st.info("Dodaj produkty, aby zobaczyć pasujące przepisy")
+        st.info("Zaznacz produkty, aby zobaczyć pasujące przepisy")
 
 st.markdown("""
     <hr>
