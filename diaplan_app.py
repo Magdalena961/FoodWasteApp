@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 import datetime
 
-st.set_page_config(page_title="FoodWasteApp – Ogranicz marnowanie żywności", layout="wide")
-st.title("🥦 FoodWasteApp")
-st.caption("Ogranicz marnowanie żywności")
+st.set_page_config(page_title="DiaPlan", layout="wide")
+st.title("🥗 DiaPlan – Automatyzacja diety w cukrzycy")
+st.caption("Zarządzaj dietą i produktami, by lepiej kontrolować poziom cukru")
 
 # Inicjalizacja sesji
 if "products" not in st.session_state:
@@ -16,12 +16,14 @@ with st.form("add_product"):
     name = st.text_input("Nazwa produktu")
     quantity = st.number_input("Ilość (np. sztuk, opakowań)", min_value=1, value=1)
     expiry = st.date_input("Data ważności", min_value=datetime.date.today())
+    glycemic = st.selectbox("Indeks glikemiczny (IG)", ["Niski", "Średni", "Wysoki"])
     submitted = st.form_submit_button("Dodaj")
     if submitted and name:
         st.session_state.products.append({
             "Nazwa": name,
             "Ilość": quantity,
-            "Data ważności": expiry
+            "Data ważności": expiry,
+            "IG": glycemic
         })
         st.success(f"Dodano produkt: {name}")
 
@@ -45,47 +47,45 @@ if st.session_state.products:
         lambda x: "⚠️ Dziś" if x == today else ("🕓 Wkrótce" if x <= today + datetime.timedelta(days=2) else "✅ OK")
     )
     st.dataframe(df.sort_values(by="Data ważności"))
-    # Zapis do CSV
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button(
         label="📥 Pobierz listę jako CSV",
         data=csv,
-        file_name='produkty_w_lodowce.csv',
+        file_name='produkty_dla_cukrzyka.csv',
         mime='text/csv'
     )
 else:
     st.info("Brak produktów w lodówce. Dodaj coś!")
 
-# Przepisy – bardzo uproszczone
-st.subheader("🍽️ Przepisy na podstawie Twoich produktów")
-example_recipes = {
-    "jajko": "Omlet z warzywami",
-    "ser": "Grzanki z serem",
-    "pomidor": "Sałatka caprese",
-    "makaron": "Makaron z sosem pomidorowym",
-    "ziemniak": "Zupa krem z ziemniaka",
-    "chleb": "Tosty francuskie",
-    "banan": "Smoothie bananowe",
-    "ryż": "Ryż smażony z warzywami"
+# Przepisy przyjazne dla cukrzyków
+st.subheader("🍽️ Przepisy odpowiednie dla cukrzyków")
+diabetic_recipes = {
+    "jajko": "Omlet z warzywami niskowęglowodanowy",
+    "brokuł": "Brokuły na parze z tofu",
+    "łosoś": "Łosoś pieczony z warzywami",
+    "cukinia": "Placki z cukinii bez mąki",
+    "migdały": "Smoothie z mlekiem migdałowym",
+    "awokado": "Sałatka z awokado i jajkiem",
+    "pierś z kurczaka": "Grillowana pierś z kurczaka z kaszą gryczaną"
 }
 
 available = [p["Nazwa"].lower() for p in st.session_state.products]
-found = [r for i, r in example_recipes.items() if i in available]
+found = [r for i, r in diabetic_recipes.items() if i in available]
 
 if found:
     for f in found:
         st.markdown(f"- {f}")
 else:
-    st.info("Brak przepisów – dodaj więcej produktów!")
+    st.info("Brak przepisów – dodaj więcej odpowiednich produktów!")
 
-# Edukacyjne tipy
-st.subheader("📚 Porady jak nie marnować jedzenia")
+# Porady dietetyczne
+st.subheader("📚 Porady dla osób z cukrzycą")
 tips = [
-    "Kupuj tylko to, czego potrzebujesz – rób listę zakupów!",
-    "Zamrażaj nadmiar jedzenia zanim się zepsuje.",
-    "Sprawdzaj daty ważności przy zakupie i w domu.",
-    "Przechowuj jedzenie w odpowiednich warunkach.",
-    "Planuj posiłki na kilka dni do przodu."
+    "Spożywaj produkty o niskim indeksie glikemicznym (IG).",
+    "Unikaj napojów słodzonych i przetworzonych przekąsek.",
+    "Jedz regularnie – nie pomijaj posiłków.",
+    "Planuj posiłki z wyprzedzeniem, by uniknąć skoków cukru.",
+    "Monitoruj poziom glukozy i dopasuj dietę do wyników."
 ]
 for tip in tips:
     st.markdown(f"✅ {tip}")
@@ -102,4 +102,4 @@ st.metric("Produkty wygasające dziś", expiring_today)
 st.metric("Produkty wygasające w ciągu 2 dni", expiring_soon)
 
 # Stopka
-st.caption("Aplikacja stworzona na potrzeby pracy dyplomowej – prototyp")
+st.caption("DiaPlan – aplikacja dietetyczna dla osób z cukrzycą – prototyp pracy dyplomowej")
