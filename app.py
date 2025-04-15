@@ -42,6 +42,12 @@ st.markdown("""
 if "products" not in st.session_state:
     st.session_state.products = []
 
+# Usuwanie przeterminowanych produktów
+today = datetime.date.today()
+st.session_state.products = [
+    p for p in st.session_state.products if p["Data ważności"] >= today
+]
+
 # Sidebar: dodawanie produktów
 with st.sidebar:
     st.header("➕ Dodaj produkt")
