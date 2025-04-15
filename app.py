@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 import datetime
 
-st.set_page_config(page_title="FoodWasteApp – Ogranicz marnowanie żywności", layout="wide")
-st.title("🥦 FoodWasteApp")
-st.caption("Ogranicz marnowanie żywności")
+st.set_page_config(page_title="FoodWasteApp", layout="wide")
+st.title("🍽️ FoodWasteApp – Zarządzaj jedzeniem i ogranicz marnowanie żywności")
+st.caption("Kontroluj produkty w lodówce, redukuj straty i planuj posiłki z głową")
 
 # Inicjalizacja sesji
 if "products" not in st.session_state:
@@ -45,7 +45,6 @@ if st.session_state.products:
         lambda x: "⚠️ Dziś" if x == today else ("🕓 Wkrótce" if x <= today + datetime.timedelta(days=2) else "✅ OK")
     )
     st.dataframe(df.sort_values(by="Data ważności"))
-    # Zapis do CSV
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button(
         label="📥 Pobierz listę jako CSV",
@@ -56,36 +55,34 @@ if st.session_state.products:
 else:
     st.info("Brak produktów w lodówce. Dodaj coś!")
 
-# Przepisy – bardzo uproszczone
-st.subheader("🍽️ Przepisy na podstawie Twoich produktów")
-example_recipes = {
-    "jajko": "Omlet z warzywami",
-    "ser": "Grzanki z serem",
-    "pomidor": "Sałatka caprese",
-    "makaron": "Makaron z sosem pomidorowym",
-    "ziemniak": "Zupa krem z ziemniaka",
-    "chleb": "Tosty francuskie",
-    "banan": "Smoothie bananowe",
-    "ryż": "Ryż smażony z warzywami"
+# Pomysły na wykorzystanie produktów
+st.subheader("🍽️ Propozycje wykorzystania produktów")
+ideas = {
+    "mleko": "Zrób naleśniki lub koktajl owocowy",
+    "jajka": "Ugotuj jajka na twardo lub zrób omlet",
+    "chleb": "Zrób grzanki lub zapiekanki",
+    "warzywa": "Przygotuj zupę krem lub warzywne curry",
+    "ser": "Wykorzystaj do zapiekanek lub kanapek",
+    "banany": "Zrób smoothie lub chlebek bananowy"
 }
 
 available = [p["Nazwa"].lower() for p in st.session_state.products]
-found = [r for i, r in example_recipes.items() if i in available]
+found = [idea for k, idea in ideas.items() if k in available]
 
 if found:
     for f in found:
         st.markdown(f"- {f}")
 else:
-    st.info("Brak przepisów – dodaj więcej produktów!")
+    st.info("Brak sugestii – dodaj więcej produktów!")
 
-# Edukacyjne tipy
-st.subheader("📚 Porady jak nie marnować jedzenia")
+# Porady dotyczące niemarnowania żywności
+st.subheader("📚 Porady przeciw marnowaniu żywności")
 tips = [
-    "Kupuj tylko to, czego potrzebujesz – rób listę zakupów!",
-    "Zamrażaj nadmiar jedzenia zanim się zepsuje.",
-    "Sprawdzaj daty ważności przy zakupie i w domu.",
-    "Przechowuj jedzenie w odpowiednich warunkach.",
-    "Planuj posiłki na kilka dni do przodu."
+    "Planuj zakupy z listą i nie kupuj na zapas",
+    "Sprawdzaj daty ważności i zużywaj produkty na czas",
+    "Przechowuj żywność w odpowiednich warunkach",
+    "Wykorzystuj resztki do tworzenia nowych potraw",
+    "Zamrażaj nadmiar jedzenia, zanim się zepsuje"
 ]
 for tip in tips:
     st.markdown(f"✅ {tip}")
@@ -102,4 +99,4 @@ st.metric("Produkty wygasające dziś", expiring_today)
 st.metric("Produkty wygasające w ciągu 2 dni", expiring_soon)
 
 # Stopka
-st.caption("Aplikacja stworzona na potrzeby pracy dyplomowej – prototyp")
+st.caption("FoodWasteApp – aplikacja do zarządzania jedzeniem – prototyp pracy dyplomowej")
