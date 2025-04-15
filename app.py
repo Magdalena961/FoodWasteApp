@@ -76,11 +76,10 @@ if page == "📋 Produkty":
     st.subheader("📋 Twoje produkty")
     if st.session_state.products:
         today = datetime.date.today()
-        display_data = []
 
         for i, product in enumerate(st.session_state.products):
             status = "⚠️ Dziś" if product["Data ważności"] == today else ("🕓 Wkrótce" if product["Data ważności"] <= today + datetime.timedelta(days=2) else "✅ OK")
-            col1, col2 = st.columns([0.1, 0.9])
+            col1, col2 = st.columns([0.05, 0.95])
             with col1:
                 checked = st.checkbox("", key=f"cb_{i}", value=i in st.session_state.selected_products)
                 if checked:
@@ -88,14 +87,14 @@ if page == "📋 Produkty":
                 else:
                     st.session_state.selected_products.discard(i)
             with col2:
-                st.markdown(f"**{i+1}. {product['Nazwa']}** – {product['Ilość']} {product['Jednostka']} (ważne do: {product['Data ważności']}) – {status}")
+                st.markdown(f"**{product['Nazwa']}** – {product['Ilość']} {product['Jednostka']} (ważne do: {product['Data ważności']}) – {status}")
 
         st.markdown("---")
-        names = [f"{idx + 1}. {p['Nazwa']} ({p['Data ważności']})" for idx, p in enumerate(st.session_state.products)]
+        names = [f"{p['Nazwa']} ({p['Data ważności']})" for p in st.session_state.products]
         to_delete = st.selectbox("Usuń produkt", options=["---"] + names)
         if to_delete != "---":
-            index = int(to_delete.split(".")[0]) - 1
-            if st.button("🗑️ Usuń"):
+            index = next((i for i, p in enumerate(st.session_state.products) if f"{p['Nazwa']} ({p['Data ważności']})" == to_delete), None)
+            if st.button("🗑️ Usuń") and index is not None:
                 removed = st.session_state.products.pop(index)
                 st.success(f"Usunięto: {removed['Nazwa']}")
 
