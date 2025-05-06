@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 import datetime
 import plotly.express as px  # Zaimportowanie Plotly
+import pytesseract
+from PIL import Image
+import io
 
 st.set_page_config(page_title="FoodWasteApp", layout="wide")
 
@@ -62,6 +65,32 @@ with st.sidebar:
             "Data ważności": expiry
         })
         st.success(f"Dodano: {name}")
+
+    # Składanie produktów z paragonów / zdjęć
+    st.header("📸 Skanuj paragon")
+    uploaded_file = st.file_uploader("Załaduj zdjęcie paragonu lub listy zakupów", type=["jpg", "png", "jpeg"])
+    
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file)
+        st.image(image, caption="Załadowane zdjęcie", use_column_width=True)
+
+        # Konwertowanie zdjęcia na tekst za pomocą OCR
+        text = pytesseract.image_to_string(image)
+        st.subheader("Wykryty tekst:")
+        st.write(text)
+        
+        # Przykład prostego parsowania wykrytego tekstu do produktów
+        # Można tu dodać bardziej zaawansowaną logikę do rozpoznawania nazw produktów
+        detected_products = text.split("\n")
+        for product in detected_products:
+            if product.strip():
+                st.session_state.products.append({
+                    "Nazwa": product.strip(),
+                    "Ilość": 1.0,  # Na razie przyjmujemy jednostkę 1.0, można dodać logikę do wykrywania ilości
+                    "Jednostka": "szt.",
+                    "Data ważności": today + datetime.timedelta(days=7)  # Można tu dodać logikę do daty ważności
+                })
+                st.success(f"Dodano produkt z paragonu: {product.strip()}")
 
 # Zakładki
 page = st.selectbox("Wybierz sekcję", ["📋 Produkty", "📚 Porady", "📊 Statystyki", "🍽️ Przepisy", "📈 Dane Eurostat"])
@@ -142,21 +171,18 @@ elif page == "🍽️ Przepisy":
         "kurczak": ("Kurczak pieczony", "https://source.unsplash.com/600x400/?roast,chicken")
     }
 
-    # Dodanie funkcji wyboru produktów
-    selected_products = st.multiselect("Wybierz produkty do przepisu", options=[p["Nazwa"] for p in st.session_state.products])
+    # Wybór produktów przez użytkownika
+    available = [p["Nazwa"].lower() for p in st.session_state.products]
+    selected = st.multiselect("Wybierz produkty do przepisu", available)
 
-    # Generowanie przepisu na podstawie wybranych produktów
-    if selected_products:
-        matched = False
-        for key, (desc, img_url) in recipes.items():
-            if key in [product.lower() for product in selected_products]:
-                st.image(img_url, use_container_width=True)
-                st.markdown(f"### 🍽️ {desc}")
-                matched = True
-        if not matched:
-            st.info("Brak przepisów pasujących do wybranych produktów.")
-    else:
-        st.info("Wybierz produkty, aby zobaczyć pasujące przepisy.")
+    matched = False
+    for key, (desc, img_url) in recipes.items():
+        if key in selected:
+            st.image(img_url, use_container_width=True)
+            st.markdown(f"### 🍽️ {desc}")
+            matched = True
+    if not matched:
+        st.info("Dodaj produkty, aby zobaczyć pasujące przepisy")
 
 elif page == "📈 Dane Eurostat":
     st.subheader("📈 Wskazówki na podstawie danych Eurostat")
