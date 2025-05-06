@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import datetime
+pip install plotly
 import plotly.express as px  # Zaimportowanie Plotly
 
 st.set_page_config(page_title="FoodWasteApp", layout="wide")
