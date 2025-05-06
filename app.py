@@ -192,7 +192,7 @@ elif page == "📸 Skanowanie paragonu":
             products = [product.strip() for product in products if product.strip()]
 
             if products:
-                st.session_state.products.extend([{"Nazwa": product, "Ilość": 1, "Jednostka": "szt.", "Data ważności": "brak"} for product in products])
+                st.session_state.products.extend([{"Nazwa": product, "Ilość": 1, "Jednostka": "szt.", "Data ważności": today} for product in products])
                 st.success("Produkty zostały dodane do listy!")
             else:
                 st.warning("Nie udało się rozpoznać żadnych produktów. Spróbuj ponownie.")
