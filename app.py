@@ -1,11 +1,7 @@
 import streamlit as st
 import pandas as pd
 import datetime
-import pytesseract
-from PIL import Image
-
-# Ustawienia tesseract (jeśli używasz lokalnego Tesseract, musisz określić ścieżkę do niego)
-# pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+import plotly.express as px  # Zaimportowanie Plotly
 
 st.set_page_config(page_title="FoodWasteApp", layout="wide")
 
@@ -67,14 +63,8 @@ with st.sidebar:
         })
         st.success(f"Dodano: {name}")
 
-# Funkcja do przetwarzania obrazu z użyciem OCR
-def process_image(image):
-    # Odczytanie tekstu z obrazu
-    text = pytesseract.image_to_string(image)
-    return text
-
 # Zakładki
-page = st.selectbox("Wybierz sekcję", ["📋 Produkty", "📚 Porady", "📊 Statystyki", "🍽️ Przepisy", "📈 Dane Eurostat", "📸 Skanowanie paragonu"])
+page = st.selectbox("Wybierz sekcję", ["📋 Produkty", "📚 Porady", "📊 Statystyki", "🍽️ Przepisy", "📈 Dane Eurostat"])
 
 if page == "📋 Produkty":
     st.subheader("📋 Twoje produkty")
@@ -137,6 +127,7 @@ elif page == "📊 Statystyki":
 elif page == "🍽️ Przepisy":
     st.subheader("🍽️ Propozycje przepisów")
 
+    # Definicja przepisów z przypisanymi obrazkami
     recipes = {
         "banany": ("Chlebek bananowy", "https://source.unsplash.com/600x400/?banana,bread"),
         "jajka": ("Omlet z warzywami", "https://source.unsplash.com/600x400/?omelette"),
@@ -151,15 +142,21 @@ elif page == "🍽️ Przepisy":
         "kurczak": ("Kurczak pieczony", "https://source.unsplash.com/600x400/?roast,chicken")
     }
 
-    available = [p["Nazwa"].lower() for p in st.session_state.products]
-    matched = False
-    for key, (desc, img_url) in recipes.items():
-        if key in available:
-            st.image(img_url, use_container_width=True)
-            st.markdown(f"### 🍽️ {desc}")
-            matched = True
-    if not matched:
-        st.info("Dodaj produkty, aby zobaczyć pasujące przepisy")
+    # Dodanie funkcji wyboru produktów
+    selected_products = st.multiselect("Wybierz produkty do przepisu", options=[p["Nazwa"] for p in st.session_state.products])
+
+    # Generowanie przepisu na podstawie wybranych produktów
+    if selected_products:
+        matched = False
+        for key, (desc, img_url) in recipes.items():
+            if key in [product.lower() for product in selected_products]:
+                st.image(img_url, use_container_width=True)
+                st.markdown(f"### 🍽️ {desc}")
+                matched = True
+        if not matched:
+            st.info("Brak przepisów pasujących do wybranych produktów.")
+    else:
+        st.info("Wybierz produkty, aby zobaczyć pasujące przepisy.")
 
 elif page == "📈 Dane Eurostat":
     st.subheader("📈 Wskazówki na podstawie danych Eurostat")
@@ -169,35 +166,6 @@ elif page == "📈 Dane Eurostat":
     st.markdown("- Z chleba rób grzanki lub zamrażaj go w porcjach.")
     st.markdown("- Produkty mleczne (jogurty, mleko) kupuj z długim terminem i oznaczaj datą otwarcia.")
     st.markdown("- Planuj posiłki, aby nie kupować zbędnych produktów łatwo psujących się.")
-
-elif page == "📸 Skanowanie paragonu":
-    st.subheader("📸 Skanowanie paragonu/listy zakupów")
-    uploaded_file = st.file_uploader("Wybierz obraz z listą zakupów lub paragonem", type=["png", "jpg", "jpeg"])
-
-    if uploaded_file is not None:
-        # Wyświetlenie przesłanego obrazu
-        image = Image.open(uploaded_file)
-        st.image(image, caption="Skanowany obraz", use_column_width=True)
-
-        # Przetwarzanie obrazu przy użyciu OCR
-        st.write("Odczytany tekst z obrazu:")
-        text = process_image(image)
-        st.text_area("Odczytany tekst", text, height=300)
-
-        # Możliwość wyboru produktów do dodania do listy
-        if st.button("Dodaj produkty do listy"):
-            # Możemy tu dodać logikę wyodrębniania nazw produktów z tekstu OCR
-            # Dla uproszczenia załóżmy, że produkty są oddzielone przecinkami
-            products = text.split("\n")
-            products = [product.strip() for product in products if product.strip()]
-
-            if products:
-                st.session_state.products.extend([{"Nazwa": product, "Ilość": 1, "Jednostka": "szt.", "Data ważności": today} for product in products])
-                st.success("Produkty zostały dodane do listy!")
-            else:
-                st.warning("Nie udało się rozpoznać żadnych produktów. Spróbuj ponownie.")
-    else:
-        st.info("Załaduj zdjęcie listy zakupów lub paragonu, aby rozpocząć skanowanie.")
 
 st.markdown("""
     <hr>
