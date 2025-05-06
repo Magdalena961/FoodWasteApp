@@ -6,6 +6,7 @@ import pytesseract
 from PIL import Image
 import io
 
+# Ustawienia aplikacji Streamlit
 st.set_page_config(page_title="FoodWasteApp", layout="wide")
 
 # Stylizacja CSS
@@ -66,34 +67,37 @@ with st.sidebar:
         })
         st.success(f"Dodano: {name}")
 
-    # Składanie produktów z paragonów / zdjęć
-    st.header("📸 Skanuj paragon")
-    uploaded_file = st.file_uploader("Załaduj zdjęcie paragonu lub listy zakupów", type=["jpg", "png", "jpeg"])
-    
-    if uploaded_file is not None:
+# Funkcja do skanowania paragonu/listy zakupów
+def scan_receipt():
+    uploaded_file = st.file_uploader("Wczytaj paragon lub listę zakupów", type=["png", "jpg", "jpeg"])
+    if uploaded_file:
         image = Image.open(uploaded_file)
-        st.image(image, caption="Załadowane zdjęcie", use_column_width=True)
-
-        # Konwertowanie zdjęcia na tekst za pomocą OCR
+        st.image(image, caption="Skanowany obraz", use_column_width=True)
         text = pytesseract.image_to_string(image)
-        st.subheader("Wykryty tekst:")
-        st.write(text)
+        st.text_area("Tekst z obrazu", text, height=300)
         
-        # Przykład prostego parsowania wykrytego tekstu do produktów
-        # Można tu dodać bardziej zaawansowaną logikę do rozpoznawania nazw produktów
-        detected_products = text.split("\n")
-        for product in detected_products:
-            if product.strip():
-                st.session_state.products.append({
-                    "Nazwa": product.strip(),
-                    "Ilość": 1.0,  # Na razie przyjmujemy jednostkę 1.0, można dodać logikę do wykrywania ilości
-                    "Jednostka": "szt.",
-                    "Data ważności": today + datetime.timedelta(days=7)  # Można tu dodać logikę do daty ważności
-                })
-                st.success(f"Dodano produkt z paragonu: {product.strip()}")
+        # Przetwarzanie tekstu, aby dodać produkty do listy
+        lines = text.split("\n")
+        for line in lines:
+            if line.strip():
+                # Zakładamy, że każda linia to produkt w formie: "Nazwa Produktu Ilość"
+                parts = line.strip().split()
+                if len(parts) >= 2:
+                    product_name = " ".join(parts[:-1])
+                    try:
+                        product_quantity = float(parts[-1])
+                        st.session_state.products.append({
+                            "Nazwa": product_name,
+                            "Ilość": product_quantity,
+                            "Jednostka": "szt.",  # Domyślna jednostka
+                            "Data ważności": expiry  # Domyślna data ważności
+                        })
+                        st.success(f"Dodano produkt: {product_name}")
+                    except ValueError:
+                        pass
 
 # Zakładki
-page = st.selectbox("Wybierz sekcję", ["📋 Produkty", "📚 Porady", "📊 Statystyki", "🍽️ Przepisy", "📈 Dane Eurostat"])
+page = st.selectbox("Wybierz sekcję", ["📋 Produkty", "📚 Porady", "📊 Statystyki", "🍽️ Przepisy", "📈 Dane Eurostat", "📷 Skanuj paragon"])
 
 if page == "📋 Produkty":
     st.subheader("📋 Twoje produkty")
@@ -156,7 +160,6 @@ elif page == "📊 Statystyki":
 elif page == "🍽️ Przepisy":
     st.subheader("🍽️ Propozycje przepisów")
 
-    # Definicja przepisów z przypisanymi obrazkami
     recipes = {
         "banany": ("Chlebek bananowy", "https://source.unsplash.com/600x400/?banana,bread"),
         "jajka": ("Omlet z warzywami", "https://source.unsplash.com/600x400/?omelette"),
@@ -171,13 +174,10 @@ elif page == "🍽️ Przepisy":
         "kurczak": ("Kurczak pieczony", "https://source.unsplash.com/600x400/?roast,chicken")
     }
 
-    # Wybór produktów przez użytkownika
     available = [p["Nazwa"].lower() for p in st.session_state.products]
-    selected = st.multiselect("Wybierz produkty do przepisu", available)
-
     matched = False
     for key, (desc, img_url) in recipes.items():
-        if key in selected:
+        if key in available:
             st.image(img_url, use_container_width=True)
             st.markdown(f"### 🍽️ {desc}")
             matched = True
@@ -192,6 +192,9 @@ elif page == "📈 Dane Eurostat":
     st.markdown("- Z chleba rób grzanki lub zamrażaj go w porcjach.")
     st.markdown("- Produkty mleczne (jogurty, mleko) kupuj z długim terminem i oznaczaj datą otwarcia.")
     st.markdown("- Planuj posiłki, aby nie kupować zbędnych produktów łatwo psujących się.")
+
+elif page == "📷 Skanuj paragon":
+    scan_receipt()
 
 st.markdown("""
     <hr>
