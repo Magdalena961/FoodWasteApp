@@ -6,7 +6,7 @@ from streamlit.components.v1 import html
 st.set_page_config(page_title="FoodWasteApp", layout="wide")
 
 # Stylizacja CSS – styl boho i elegancki
-st.markdown("""
+st.markdown("""      
     <style>
         .main-header {
             text-align: center;
@@ -43,7 +43,7 @@ if "products" not in st.session_state:
     st.session_state.products = []
 
 if "selected_products" not in st.session_state:
-    st.session_state.selected_products = set()
+    st.session_state.selected_products = []
 
 # Usuwanie przeterminowanych produktów
 today = datetime.date.today()
@@ -80,6 +80,11 @@ if page == "📋 Produkty":
         df["Status"] = df["Data ważności"].apply(lambda x: "⚠️ Dziś" if x == today else ("🖓 Wkrótce" if x <= today + datetime.timedelta(days=2) else "✅ OK"))
         st.dataframe(df)
 
+        # Zaznaczanie produktów do przepisów
+        product_names = [p["Nazwa"] for p in st.session_state.products]
+        selected = st.multiselect("🧺 Zaznacz produkty do wykorzystania w przepisach", options=product_names)
+        st.session_state.selected_products = [i for i, p in enumerate(st.session_state.products) if p["Nazwa"] in selected]
+
         st.markdown("---")
         names = [f"{p['Nazwa']} ({p['Data ważności']})" for p in st.session_state.products]
         to_delete = st.selectbox("Usuń produkt", options=["---"] + names)
@@ -102,6 +107,9 @@ if page == "📋 Produkty":
 # Sekcja porad
 elif page == "📚 Porady":
     st.subheader("📚 Pomysły i wskazówki")
+
+    # Wskazówka na podstawie danych z Eurostatu
+    st.info("ℹ️ Według danych Eurostatu, największe straty żywności powstają w gospodarstwach domowych – nawet 55% całkowitego marnowania. Zaplanuj posiłki z wyprzedzeniem, aby uniknąć wyrzucania jedzenia!")
 
     ideas = {
         "mleko": "Zrób koktajl lub naleśniki",
@@ -185,3 +193,4 @@ st.markdown("""
     <hr>
     <p style='text-align: center; font-size: 0.8em;'>FoodWasteApp – prototyp aplikacji dyplomowej do walki z marnowaniem żywności</p>
 """, unsafe_allow_html=True)
+
