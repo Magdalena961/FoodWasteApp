@@ -157,12 +157,41 @@ elif page == "🍽️ Przepisy":
 
 elif page == "📈 Dane Eurostat":
     st.subheader("📈 Wskazówki na podstawie danych Eurostat")
-    st.markdown("Na podstawie danych z Eurostat, przeciętne gospodarstwo domowe w UE marnuje najwięcej: warzyw, pieczywa, owoców i produktów mlecznych.")
-    st.markdown("#### 👉 Wskazówki:")
-    st.markdown("- Kupuj warzywa i owoce na bieżąco, w mniejszych ilościach.")
-    st.markdown("- Z chleba rób grzanki lub zamrażaj go w porcjach.")
-    st.markdown("- Produkty mleczne (jogurty, mleko) kupuj z długim terminem i oznaczaj datą otwarcia.")
-    st.markdown("- Planuj posiłki, aby nie kupować zbędnych produktów łatwo psujących się.")
+    
+    # Dodanie więcej szczegółowych danych
+    st.markdown("""
+    ## Wskaźniki marnotrawstwa żywności w Unii Europejskiej:
+    
+    - **88 milionów ton żywności** rocznie marnuje się w UE.
+    - Średnia wielkość marnotrawstwa w każdym gospodarstwie domowym w UE to około **173 kg** na osobę rocznie.
+    - **Owoce, warzywa, pieczywo** oraz **produkty mleczne** to najczęściej marnowane produkty.
+    
+    ## Dlaczego marnujemy żywność?
+    - **Spożycie domowe**: Produkty często marnują się w wyniku przypadkowego nadmiaru zakupów, złego przechowywania, przekroczonej daty ważności i braku planowania posiłków.
+    - **Sektor gastronomiczny**: W restauracjach żywność marnuje się na skutek nadmiaru przygotowanych posiłków oraz złych praktyk porcjowania.
+
+    ## Wartość marnotrawstwa w gospodarstwach domowych:
+    - W UE każde gospodarstwo domowe marnuje średnio **700 EUR rocznie** na jedzenie, które trafia do kosza.
+
+    ## Sposoby ograniczenia marnotrawstwa:
+    - **Planowanie posiłków**: Zrób listę zakupów i planuj posiłki na tydzień. W ten sposób unikniesz nadmiaru produktów.
+    - **Przechowywanie żywności**: Właściwe przechowywanie produktów w odpowiednich warunkach pomoże w ich dłuższym przechowywaniu i zmniejszeniu marnotrawstwa.
+    - **Wykorzystanie resztek**: Z resztek jedzenia możesz zrobić pyszne dania, np. zupy, zapiekanki, sałatki.
+
+    ## Przykłady krajów aktywnie zmniejszających marnotrawstwo:
+    - **Holandia, Szwecja i Niemcy**: Stosują programy edukacyjne oraz inicjatywy promujące mniejsze marnotrawstwo, w tym darowizny żywnościowe.
+    
+    ## Jakie są skutki marnotrawstwa?
+    - **Ekologiczne**: Marnowanie żywności oznacza marnowanie zasobów, takich jak woda, energia i grunt. Marnowanie jedzenia generuje również ogromne emisje gazów cieplarnianych.
+    - **Ekonomiczne**: Wyrzucanie jedzenia jest kosztowne – nie tylko dla konsumentów, ale także dla całej gospodarki.
+
+    ### Zastosowanie rozwiązań:
+    - Zmiana postaw konsumentów oraz działania na poziomie społecznym mogą przyczynić się do znacznego zmniejszenia marnotrawstwa żywności.
+    """)
+    
+    st.markdown("---")
+    st.markdown("**Dodatkowe źródła**:")
+    st.markdown("[Eurostat - Marnowanie żywności w UE](https://ec.europa.eu/eurostat/statistics-explained/index.php?title=Food_waste_statistics)")
 
 elif page == "📷 Skanowanie Paragonu":
     st.subheader("📷 Skanowanie paragonu lub listy zakupów")
