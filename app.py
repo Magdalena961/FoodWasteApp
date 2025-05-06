@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import datetime
-import plotly.express as px  # Zaimportowanie Plotly
+import requests
 
 st.set_page_config(page_title="FoodWasteApp", layout="wide")
 
@@ -68,11 +68,32 @@ page = st.selectbox("Wybierz sekcję", ["📋 Produkty", "📚 Porady", "📊 St
 
 if page == "📋 Produkty":
     st.subheader("📋 Twoje produkty")
+    
     if st.session_state.products:
         df = pd.DataFrame(st.session_state.products)
-        df["Status"] = df["Data ważności"].apply(lambda x: "⚠️ Dziś" if x == today else ("🖓 Wkrótce" if x <= today + datetime.timedelta(days=2) else "✅ OK"))
+        
+        # Określanie statusu produktów na podstawie daty ważności
+        df["Status"] = df["Data ważności"].apply(
+            lambda x: "⚠️ Dziś" if x == today else 
+                      ("🖓 Wkrótce" if x <= today + datetime.timedelta(days=2) else "✅ OK")
+        )
         st.dataframe(df)
 
+        # Alert dla produktów, które mają wygasnąć wkrótce
+        expiring_soon = [p for p in st.session_state.products if p["Data ważności"] <= today + datetime.timedelta(days=2) and p["Data ważności"] > today]
+        if expiring_soon:
+            st.warning("Uwaga! Następujące produkty wygasną wkrótce:")
+            for product in expiring_soon:
+                st.markdown(f"⚠️ {product['Nazwa']} - ważność: {product['Data ważności']}")
+
+        # Alert dla produktów, które wygasły
+        expired = [p for p in st.session_state.products if p["Data ważności"] < today]
+        if expired:
+            st.error("UWAGA! Poniższe produkty są przeterminowane:")
+            for product in expired:
+                st.markdown(f"❌ {product['Nazwa']} - ważność: {product['Data ważności']}")
+
+        # Usuwanie produktów
         st.markdown("---")
         names = [f"{p['Nazwa']} ({p['Data ważności']})" for p in st.session_state.products]
         to_delete = st.selectbox("Usuń produkt", options=["---"] + names)
@@ -82,10 +103,12 @@ if page == "📋 Produkty":
                 removed = st.session_state.products.pop(index)
                 st.success(f"Usunięto: {removed['Nazwa']}")
 
+        # Możliwość czyszczenia listy
         if st.button("♻️ Wyczyść listę"):
             st.session_state.products = []
             st.success("Wyczyszczono wszystkie produkty.")
 
+        # Pobranie pliku CSV
         csv = pd.DataFrame(st.session_state.products).to_csv(index=False).encode("utf-8")
         st.download_button("📅 Pobierz CSV", data=csv, file_name="produkty.csv", mime="text/csv")
     else:
@@ -127,40 +150,31 @@ elif page == "📊 Statystyki":
 elif page == "🍽️ Przepisy":
     st.subheader("🍽️ Propozycje przepisów")
 
+    # Przepisy
     recipes = {
-        "banany": ("Chlebek bananowy", "https://source.unsplash.com/600x400/?banana,bread"),
-        "jajka": ("Omlet z warzywami", "https://source.unsplash.com/600x400/?omelette"),
-        "ser": ("Zapiekanka z serem", "https://source.unsplash.com/600x400/?cheese,casserole"),
-        "chleb": ("Grzanki czosnkowe", "https://source.unsplash.com/600x400/?garlic,bread"),
-        "mleko": ("Naleśniki mleczne", "https://source.unsplash.com/600x400/?pancakes"),
-        "ziemniaki": ("Frytki pieczone", "https://source.unsplash.com/600x400/?fries"),
-        "pomidor": ("Zupa pomidorowa", "https://source.unsplash.com/600x400/?tomato,soup"),
-        "papryka": ("Faszerowana papryka", "https://source.unsplash.com/600x400/?stuffed,pepper"),
-        "ryż": ("Ryż z warzywami", "https://source.unsplash.com/600x400/?rice,vegetables"),
-        "makaron": ("Makaron z sosem", "https://source.unsplash.com/600x400/?pasta"),
-        "kurczak": ("Kurczak pieczony", "https://source.unsplash.com/600x400/?roast,chicken")
+        "banany": ("Chlebek bananowy", "https://source.unsplash.com/600x400/?banana,bread", "Banany, mąka, jajka", "100g bananów, 150g mąki, 2 jajka"),
+        "jajka": ("Omlet z warzywami", "https://source.unsplash.com/600x400/?omelette", "Jajka, pomidory, cebula, papryka", "3 jajka, 1 pomidor, 1 cebula, 1 papryka"),
+        "ser": ("Zapiekanka z serem", "https://source.unsplash.com/600x400/?cheese,casserole", "Ser, ziemniaki, cebula", "200g sera, 500g ziemniaków, 1 cebula"),
+        "chleb": ("Grzanki czosnkowe", "https://source.unsplash.com/600x400/?garlic,bread", "Chleb, czosnek, masło", "4 kromki chleba, 2 ząbki czosnku, 50g masła"),
+        "mleko": ("Naleśniki mleczne", "https://source.unsplash.com/600x400/?pancakes", "Mleko, mąka, jajka", "200ml mleka, 150g mąki, 1 jajko"),
+        "ziemniaki": ("Frytki pieczone", "https://source.unsplash.com/600x400/?fries", "Ziemniaki, oliwa, przyprawy", "4 ziemniaki, 2 łyżki oliwy, sól, pieprz"),
+        "pomidor": ("Zupa pomidorowa", "https://source.unsplash.com/600x400/?tomato,soup", "Pomidory, cebula, czosnek", "1 kg pomidorów, 1 cebula, 2 ząbki czosnku"),
+        "papryka": ("Faszerowana papryka", "https://source.unsplash.com/600x400/?stuffed,pepper", "Papryka, mięso mielone, ryż", "4 papryki, 300g mięsa mielonego, 100g ryżu"),
+        "ryż": ("Ryż z warzywami", "https://source.unsplash.com/600x400/?rice,vegetables", "Ryż, brokuł, marchewka", "200g ryżu, 1 brokuł, 2 marchewki")
     }
 
-    available = [p["Nazwa"].lower() for p in st.session_state.products]
-    matched = False
-    for key, (desc, img_url) in recipes.items():
-        if key in available:
-            st.image(img_url, use_container_width=True)
-            st.markdown(f"### 🍽️ {desc}")
-            matched = True
-    if not matched:
-        st.info("Dodaj produkty, aby zobaczyć pasujące przepisy")
+    # Wybór składników
+    selected_ingredients = st.multiselect("Wybierz składniki", options=[product["Nazwa"] for product in st.session_state.products])
 
-elif page == "📈 Dane Eurostat":
-    st.subheader("📈 Wskazówki na podstawie danych Eurostat")
-    st.markdown("Na podstawie danych z Eurostat, przeciętne gospodarstwo domowe w UE marnuje najwięcej: warzyw, pieczywa, owoców i produktów mlecznych.")
-    st.markdown("#### 👉 Wskazówki:")
-    st.markdown("- Kupuj warzywa i owoce na bieżąco, w mniejszych ilościach.")
-    st.markdown("- Z chleba rób grzanki lub zamrażaj go w porcjach.")
-    st.markdown("- Produkty mleczne (jogurty, mleko) kupuj z długim terminem i oznaczaj datą otwarcia.")
-    st.markdown("- Planuj posiłki, aby nie kupować zbędnych produktów łatwo psujących się.")
+    # Szukanie przepisu
+    matching_recipes = {k: v for k, v in recipes.items() if any(ingredient in selected_ingredients for ingredient in v[2].split(", "))}
 
-st.markdown("""
-    <hr>
-    <p style='text-align: center; font-size: 0.8em;'>FoodWasteApp – prototyp aplikacji dyplomowej do walki z marnowaniem żywności</p>
-""", unsafe_allow_html=True)
+    if matching_recipes:
+        for name, recipe in matching_recipes.items():
+            st.subheader(f"🍽️ {recipe[0]}")
+            st.image(recipe[1], caption=recipe[0])
+            st.write(f"Składniki: {recipe[2]}")
+            st.write(f"Gramatura: {recipe[3]}")
+            st.write("Wykonanie: Wymieszaj składniki, upiecz/grilluj na złoto, podawaj.")
+    else:
+        st.info("Nie znaleziono przepisu na podstawie wybranych składników.")
