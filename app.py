@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
 import datetime
-from streamlit.components.v1 import html
+import requests
 
 st.set_page_config(page_title="FoodWasteApp", layout="wide")
 
 # Stylizacja CSS
-st.markdown("""      
+st.markdown("""
     <style>
         .main-header {
             text-align: center;
