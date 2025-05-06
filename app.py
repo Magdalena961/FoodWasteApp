@@ -77,7 +77,7 @@ if page == "📋 Produkty":
     if st.session_state.products:
         today = datetime.date.today()
         df = pd.DataFrame(st.session_state.products)
-        df["Status"] = df["Data ważności"].apply(lambda x: "⚠️ Dziś" if x == today else ("🕓 Wkrótce" if x <= today + datetime.timedelta(days=2) else "✅ OK"))
+        df["Status"] = df["Data ważności"].apply(lambda x: "⚠️ Dziś" if x == today else ("🖓 Wkrótce" if x <= today + datetime.timedelta(days=2) else "✅ OK"))
         st.dataframe(df)
 
         st.markdown("---")
@@ -95,7 +95,7 @@ if page == "📋 Produkty":
 
         df = pd.DataFrame(st.session_state.products)
         csv = df.to_csv(index=False).encode("utf-8")
-        st.download_button("📥 Pobierz CSV", data=csv, file_name="produkty.csv", mime="text/csv")
+        st.download_button("📅 Pobierz CSV", data=csv, file_name="produkty.csv", mime="text/csv")
     else:
         st.info("Brak produktów. Dodaj coś w menu bocznym!")
 
