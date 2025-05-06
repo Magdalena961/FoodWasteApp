@@ -1,13 +1,12 @@
 import streamlit as st
 import pandas as pd
 import datetime
-import requests
-import plotly.express as px
+import plotly.express as px  # Zaimportowanie Plotly
 
 st.set_page_config(page_title="FoodWasteApp", layout="wide")
 
 # Stylizacja CSS
-st.markdown("""
+st.markdown("""       
     <style>
         .main-header {
             text-align: center;
@@ -153,32 +152,15 @@ elif page == "🍽️ Przepisy":
         st.info("Dodaj produkty, aby zobaczyć pasujące przepisy")
 
 elif page == "📈 Dane Eurostat":
-    st.subheader("📈 Najczęściej marnowane produkty w UE")
-
-    # Przykładowe dane Eurostat
-    data = {
-        "Grupa produktów": ["Warzywa i owoce", "Pieczywo i zboża", "Produkty mleczne", "Mięso i ryby", "Inne"],
-        "Udział %": [31, 22, 18, 14, 15]
-    }
-    df = pd.DataFrame(data)
-
-    fig = px.pie(df, names="Grupa produktów", values="Udział %",
-                 title="Struktura marnowania żywności wg Eurostat", hole=0.4)
-    st.plotly_chart(fig, use_container_width=True)
-
-    st.markdown("#### 👉 Wnioski i porady na podstawie danych:")
-
-    if df.loc[df["Grupa produktów"] == "Warzywa i owoce", "Udział %"].values[0] > 25:
-        st.info("🥦 Warzywa i owoce są najczęściej marnowane – kupuj w mniejszych ilościach i przechowuj je osobno.")
-    if df.loc[df["Grupa produktów"] == "Pieczywo i zboża", "Udział %"].values[0] > 20:
-        st.info("🍞 Pieczywo zamrażaj w porcjach lub rób grzanki z czerstwego chleba.")
-    if df.loc[df["Grupa produktów"] == "Produkty mleczne", "Udział %"].values[0] > 15:
-        st.info("🥛 Produkty mleczne kupuj z długim terminem przydatności i oznaczaj datą otwarcia.")
-    if df.loc[df["Grupa produktów"] == "Mięso i ryby", "Udział %"].values[0] > 10:
-        st.info("🍗 Mięso i ryby przechowuj w zamrażarce, jeśli nie zużyjesz ich w ciągu 1–2 dni.")
+    st.subheader("📈 Wskazówki na podstawie danych Eurostat")
+    st.markdown("Na podstawie danych z Eurostat, przeciętne gospodarstwo domowe w UE marnuje najwięcej: warzyw, pieczywa, owoców i produktów mlecznych.")
+    st.markdown("#### 👉 Wskazówki:")
+    st.markdown("- Kupuj warzywa i owoce na bieżąco, w mniejszych ilościach.")
+    st.markdown("- Z chleba rób grzanki lub zamrażaj go w porcjach.")
+    st.markdown("- Produkty mleczne (jogurty, mleko) kupuj z długim terminem i oznaczaj datą otwarcia.")
+    st.markdown("- Planuj posiłki, aby nie kupować zbędnych produktów łatwo psujących się.")
 
 st.markdown("""
     <hr>
     <p style='text-align: center; font-size: 0.8em;'>FoodWasteApp – prototyp aplikacji dyplomowej do walki z marnowaniem żywności</p>
 """, unsafe_allow_html=True)
-
