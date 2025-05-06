@@ -174,4 +174,4 @@ elif page == "📈 Dane Eurostat":
 st.markdown("""
     <hr>
     <p style='text-align: center; font-size: 0.8em;'>FoodWasteApp – prototyp aplikacji dyplomowej do walki z marnowaniem żywności</p>
-""", unsafe_allow_html=True)1
+""", unsafe_allow_html=True)
