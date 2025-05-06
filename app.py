@@ -1,7 +1,11 @@
 import streamlit as st
 import pandas as pd
 import datetime
-import plotly.express as px  # Zaimportowanie Plotly
+import pytesseract
+from PIL import Image
+
+# Ustawienia tesseract (jeśli używasz lokalnego Tesseract, musisz określić ścieżkę do niego)
+# pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 st.set_page_config(page_title="FoodWasteApp", layout="wide")
 
@@ -26,10 +30,6 @@ st.markdown("""
             text-align: center;
             color: #a1887f;
             font-size: 0.9em;
-        }
-        .alert {
-            color: red;
-            font-weight: bold;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -67,20 +67,17 @@ with st.sidebar:
         })
         st.success(f"Dodano: {name}")
 
+# Funkcja do przetwarzania obrazu z użyciem OCR
+def process_image(image):
+    # Odczytanie tekstu z obrazu
+    text = pytesseract.image_to_string(image)
+    return text
+
 # Zakładki
-page = st.selectbox("Wybierz sekcję", ["📋 Produkty", "📚 Porady", "📊 Statystyki", "🍽️ Przepisy", "📈 Dane Eurostat"])
+page = st.selectbox("Wybierz sekcję", ["📋 Produkty", "📚 Porady", "📊 Statystyki", "🍽️ Przepisy", "📈 Dane Eurostat", "📸 Skanowanie paragonu"])
 
 if page == "📋 Produkty":
     st.subheader("📋 Twoje produkty")
-    
-    # Sprawdzanie produktów, które wygasają w ciągu 2 dni
-    expiring_soon = [p for p in st.session_state.products if today < p["Data ważności"] <= today + datetime.timedelta(days=2)]
-    
-    if expiring_soon:
-        st.markdown("<div class='alert'>⚠️ Uwaga! Produkty, które wygasają w ciągu 2 dni:</div>", unsafe_allow_html=True)
-        expiring_df = pd.DataFrame(expiring_soon)
-        st.dataframe(expiring_df)
-    
     if st.session_state.products:
         df = pd.DataFrame(st.session_state.products)
         df["Status"] = df["Data ważności"].apply(lambda x: "⚠️ Dziś" if x == today else ("🖓 Wkrótce" if x <= today + datetime.timedelta(days=2) else "✅ OK"))
@@ -137,15 +134,6 @@ elif page == "📊 Statystyki":
     col2.metric("⏳ Dziś wygasa", expiring_today)
     col3.metric("⚠️ Wkrótce wygasa", expiring_soon)
 
-    # Wykres z wykorzystaniem Plotly
-    fig = px.bar(
-        x=["Produkty", "Dziś wygasa", "Wkrótce wygasa"],
-        y=[total, expiring_today, expiring_soon],
-        labels={'x': 'Kategoria', 'y': 'Liczba produktów'},
-        title="Statystyki produktów"
-    )
-    st.plotly_chart(fig)
-
 elif page == "🍽️ Przepisy":
     st.subheader("🍽️ Propozycje przepisów")
 
@@ -181,6 +169,35 @@ elif page == "📈 Dane Eurostat":
     st.markdown("- Z chleba rób grzanki lub zamrażaj go w porcjach.")
     st.markdown("- Produkty mleczne (jogurty, mleko) kupuj z długim terminem i oznaczaj datą otwarcia.")
     st.markdown("- Planuj posiłki, aby nie kupować zbędnych produktów łatwo psujących się.")
+
+elif page == "📸 Skanowanie paragonu":
+    st.subheader("📸 Skanowanie paragonu/listy zakupów")
+    uploaded_file = st.file_uploader("Wybierz obraz z listą zakupów lub paragonem", type=["png", "jpg", "jpeg"])
+
+    if uploaded_file is not None:
+        # Wyświetlenie przesłanego obrazu
+        image = Image.open(uploaded_file)
+        st.image(image, caption="Skanowany obraz", use_column_width=True)
+
+        # Przetwarzanie obrazu przy użyciu OCR
+        st.write("Odczytany tekst z obrazu:")
+        text = process_image(image)
+        st.text_area("Odczytany tekst", text, height=300)
+
+        # Możliwość wyboru produktów do dodania do listy
+        if st.button("Dodaj produkty do listy"):
+            # Możemy tu dodać logikę wyodrębniania nazw produktów z tekstu OCR
+            # Dla uproszczenia załóżmy, że produkty są oddzielone przecinkami
+            products = text.split("\n")
+            products = [product.strip() for product in products if product.strip()]
+
+            if products:
+                st.session_state.products.extend([{"Nazwa": product, "Ilość": 1, "Jednostka": "szt.", "Data ważności": "brak"} for product in products])
+                st.success("Produkty zostały dodane do listy!")
+            else:
+                st.warning("Nie udało się rozpoznać żadnych produktów. Spróbuj ponownie.")
+    else:
+        st.info("Załaduj zdjęcie listy zakupów lub paragonu, aby rozpocząć skanowanie.")
 
 st.markdown("""
     <hr>
