@@ -1,12 +1,11 @@
 import streamlit as st
 import pandas as pd
 import datetime
-import plotly.express as px  # Zaimportowanie Plotly
+import plotly.express as px
 import pytesseract
 from PIL import Image
 import io
 
-# Ustawienia aplikacji Streamlit
 st.set_page_config(page_title="FoodWasteApp", layout="wide")
 
 # Stylizacja CSS
@@ -51,6 +50,12 @@ st.session_state.products = [
     p for p in st.session_state.products if p["Data ważności"] >= today
 ]
 
+# Funkcja do skanowania paragonu
+def scan_receipt(uploaded_image):
+    image = Image.open(uploaded_image)
+    text = pytesseract.image_to_string(image)
+    return text
+
 # Sidebar: dodawanie produktów
 with st.sidebar:
     st.header("➕ Dodaj produkt")
@@ -58,6 +63,7 @@ with st.sidebar:
     quantity = st.number_input("Ilość", min_value=0.0, value=1.0, step=0.1)
     unit = st.selectbox("Jednostka", ["szt.", "g", "kg", "ml", "l"])
     expiry = st.date_input("Data ważności", min_value=datetime.date.today())
+    
     if st.button("Dodaj") and name:
         st.session_state.products.append({
             "Nazwa": name,
@@ -67,37 +73,8 @@ with st.sidebar:
         })
         st.success(f"Dodano: {name}")
 
-# Funkcja do skanowania paragonu/listy zakupów
-def scan_receipt():
-    uploaded_file = st.file_uploader("Wczytaj paragon lub listę zakupów", type=["png", "jpg", "jpeg"])
-    if uploaded_file:
-        image = Image.open(uploaded_file)
-        st.image(image, caption="Skanowany obraz", use_column_width=True)
-        text = pytesseract.image_to_string(image)
-        st.text_area("Tekst z obrazu", text, height=300)
-        
-        # Przetwarzanie tekstu, aby dodać produkty do listy
-        lines = text.split("\n")
-        for line in lines:
-            if line.strip():
-                # Zakładamy, że każda linia to produkt w formie: "Nazwa Produktu Ilość"
-                parts = line.strip().split()
-                if len(parts) >= 2:
-                    product_name = " ".join(parts[:-1])
-                    try:
-                        product_quantity = float(parts[-1])
-                        st.session_state.products.append({
-                            "Nazwa": product_name,
-                            "Ilość": product_quantity,
-                            "Jednostka": "szt.",  # Domyślna jednostka
-                            "Data ważności": expiry  # Domyślna data ważności
-                        })
-                        st.success(f"Dodano produkt: {product_name}")
-                    except ValueError:
-                        pass
-
 # Zakładki
-page = st.selectbox("Wybierz sekcję", ["📋 Produkty", "📚 Porady", "📊 Statystyki", "🍽️ Przepisy", "📈 Dane Eurostat", "📷 Skanuj paragon"])
+page = st.selectbox("Wybierz sekcję", ["📋 Produkty", "📚 Porady", "📊 Statystyki", "🍽️ Przepisy", "📈 Dane Eurostat"])
 
 if page == "📋 Produkty":
     st.subheader("📋 Twoje produkty")
@@ -192,11 +169,9 @@ elif page == "📈 Dane Eurostat":
     st.markdown("- Z chleba rób grzanki lub zamrażaj go w porcjach.")
     st.markdown("- Produkty mleczne (jogurty, mleko) kupuj z długim terminem i oznaczaj datą otwarcia.")
     st.markdown("- Planuj posiłki, aby nie kupować zbędnych produktów łatwo psujących się.")
-
-elif page == "📷 Skanuj paragon":
-    scan_receipt()
+    st.markdown("- Warzywa i owoce przechowuj w odpowiednich warunkach, aby wydłużyć ich trwałość.")
 
 st.markdown("""
     <hr>
     <p style='text-align: center; font-size: 0.8em;'>FoodWasteApp – prototyp aplikacji dyplomowej do walki z marnowaniem żywności</p>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=True)1
