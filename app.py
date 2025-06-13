@@ -1,156 +1,206 @@
-# FoodWasteApp - Pełna wersja aplikacji Streamlit z dodatkowymi funkcjami
-
 import streamlit as st
 import pandas as pd
 import datetime
-import os
-from PIL import Image
 import pytesseract
+from PIL import Image
 import plotly.express as px
+import io
+import random
 import folium
 from streamlit_folium import folium_static
 
 # Ustawienia aplikacji
-st.set_page_config(page_title="FoodWasteApp", layout="wide")
+st.set_page_config(page_title="FoodWasteApp+", layout="wide")
 
-# Ładowanie i zapisywanie danych CSV
-DATA_PATH = "produkty.csv"
-
-def load_data():
-    if os.path.exists(DATA_PATH):
-        return pd.read_csv(DATA_PATH, parse_dates=["Data waznosci"])
-    return pd.DataFrame(columns=["Nazwa", "Ilosc", "Jednostka", "Data waznosci", "Cena"])
-
-def save_data(df):
-    df.to_csv(DATA_PATH, index=False)
-
-# Inicjalizacja danych
-if "products" not in st.session_state:
-    st.session_state.products = load_data()
-
-today = datetime.date.today()
-
-# Stylizacja
-st.markdown("""
-<style>
-    .main-header {
-        text-align: center;
-        color: #2e7d32;
-        font-size: 3em;
-        font-weight: bold;
-    }
-</style>
+# Stylizacja CSS
+st.markdown("""       
+    <style>
+        .main-header {
+            text-align: center;
+            color: #2e7d32;
+            font-size: 3em;
+            font-weight: bold;
+            font-family: 'Georgia', serif;
+            margin-top: 0.5em;
+        }
+        .sub-header {
+            text-align: center;
+            color: #8d6e63;
+            font-size: 1.2em;
+            font-style: italic;
+        }
+        .desc-text {
+            text-align: center;
+            color: #a1887f;
+            font-size: 0.9em;
+        }
+    </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<div class='main-header'>FoodWasteApp</div>", unsafe_allow_html=True)
+# Nagłówek
+st.markdown("""
+    <div class='main-header'>FoodWasteApp+</div>
+    <div class='sub-header'>Ogranicz marnowanie żywności</div>
+    <div class='desc-text'>Zarządzaj produktami, planuj zakupy i redukuj straty z głową – i misją!</div>
+    <br>
+""", unsafe_allow_html=True)
 
-# Sidebar - dodawanie produktu
+# Inicjalizacja stanu
+if "products" not in st.session_state:
+    st.session_state.products = []
+if "saved_money" not in st.session_state:
+    st.session_state.saved_money = 0.0
+if "saved_kg" not in st.session_state:
+    st.session_state.saved_kg = 0.0
+if "badges" not in st.session_state:
+    st.session_state.badges = set()
+
+# Data i czyszczenie
+today = datetime.date.today()
+st.session_state.products = [
+    p for p in st.session_state.products if p["Data ważności"] >= today
+]
+
+# Sidebar
 with st.sidebar:
-    st.header("Dodaj produkt")
+    st.header("➕ Dodaj produkt")
     name = st.text_input("Nazwa produktu")
-    quantity = st.number_input("Ilosc", min_value=0.0, value=1.0)
+    quantity = st.number_input("Ilość", min_value=0.0, value=1.0, step=0.1)
     unit = st.selectbox("Jednostka", ["szt.", "g", "kg", "ml", "l"])
-    expiry = st.date_input("Data waznosci", min_value=today)
-    price = st.number_input("Cena (zł)", min_value=0.0, value=0.0)
+    expiry = st.date_input("Data ważności", min_value=datetime.date.today())
+    diet = st.multiselect("Preferencje diety", ["wegetariańska", "wegańska", "bezglutenowa", "bezlaktozowa"])
     if st.button("Dodaj") and name:
-        new_row = pd.DataFrame([[name, quantity, unit, expiry, price]], columns=st.session_state.products.columns)
-        st.session_state.products = pd.concat([st.session_state.products, new_row], ignore_index=True)
-        save_data(st.session_state.products)
+        st.session_state.products.append({
+            "Nazwa": name,
+            "Ilość": quantity,
+            "Jednostka": unit,
+            "Data ważności": expiry,
+            "Dieta": diet
+        })
         st.success(f"Dodano: {name}")
 
-# Zakladki
-page = st.selectbox("Sekcja", ["Produkty", "Statystyki", "Przepisy", "Mapa lodowek", "Paragon", "Eurostat"])
+# Zakładki
+page = st.selectbox("Wybierz sekcję", [
+    "📋 Produkty", "📚 Porady i Edukacja", "📊 Statystyki", "🍽️ Przepisy", "🎮 Grywalizacja", "📍 Mapa lodówek", "📷 Skanowanie Paragonu"
+])
 
-if page == "Produkty":
-    st.subheader("Twoje produkty")
-    df = st.session_state.products
-    if not df.empty:
-        df["Status"] = df["Data waznosci"].apply(lambda x: "Dzisiaj" if pd.to_datetime(x).date() == today else ("Wkrótce" if pd.to_datetime(x).date() <= today + datetime.timedelta(days=2) else "OK"))
+if page == "📋 Produkty":
+    st.subheader("📋 Twoje produkty")
+    if st.session_state.products:
+        df = pd.DataFrame(st.session_state.products)
+        df["Status"] = df["Data ważności"].apply(lambda x: "⚠️ Dziś" if x == today else ("🖓 Wkrótce" if x <= today + datetime.timedelta(days=2) else "✅ OK"))
         st.dataframe(df)
-
-        if st.button("Wyczysc wszystkie"):
-            st.session_state.products = pd.DataFrame(columns=df.columns)
-            save_data(st.session_state.products)
-            st.success("Wyczyszczono")
+        
+        if st.button("♻️ Wyczyść listę"):
+            st.session_state.products = []
+            st.success("Wyczyszczono wszystkie produkty.")
 
         csv = df.to_csv(index=False).encode("utf-8")
-        st.download_button("Pobierz CSV", csv, "produkty.csv", "text/csv")
+        st.download_button("📅 Pobierz CSV", data=csv, file_name="produkty.csv", mime="text/csv")
     else:
-        st.info("Brak danych. Dodaj produkt w panelu bocznym.")
+        st.info("Brak produktów. Dodaj coś w menu bocznym!")
 
-elif page == "Statystyki":
-    st.subheader("Statystyki i oszczędności")
-    df = st.session_state.products
-    total = len(df)
-    soon = sum(pd.to_datetime(df["Data waznosci"]).dt.date <= today + datetime.timedelta(days=2))
-    value = df["Cena"].sum()
-    co2_saved = total * 2.5  # Średnia wartość emisji CO2 w kg za produkt
-
-    st.metric("Liczba produktów", total)
-    st.metric("Wkrótce wygasa", soon)
-    st.metric("Łączna wartość", f"{value:.2f} zł")
-    st.metric("Oszczędzony CO2", f"{co2_saved:.1f} kg")
-
-    chart = px.histogram(df, x="Data waznosci", nbins=20, title="Produkty wg daty wazności")
-    st.plotly_chart(chart)
-
-elif page == "Przepisy":
-    st.subheader("Propozycje przepisów")
-    skladniki = df["Nazwa"].str.lower().tolist()
-    przepisy = {
-        "jajka": "Omlet z warzywami",
-        "banany": "Chlebek bananowy",
-        "pomidor": "Zupa pomidorowa",
-        "ziemniaki": "Frytki pieczone"
-    }
-    znalezione = [przepisy[s] for s in przepisy if s in skladniki]
-    if znalezione:
-        for r in znalezione:
-            st.success(f"✅ {r}")
-    else:
-        st.info("Brak dopasowanych przepisów")
-
-elif page == "Mapa lodowek":
-    st.subheader("Mapa lodówek społecznych")
-    mapa = folium.Map(location=[52.2297, 21.0122], zoom_start=6)
-    punkty = [
-        {"nazwa": "Warszawa - Jadłodzielnia", "lat": 52.2297, "lon": 21.0122},
-        {"nazwa": "Kraków - Punkt dzielenia się", "lat": 50.0647, "lon": 19.9450},
-        {"nazwa": "Gdańsk - Lodówka", "lat": 54.3520, "lon": 18.6466}
-    ]
-    for p in punkty:
-        folium.Marker(location=[p["lat"], p["lon"]], popup=p["nazwa"]).add_to(mapa)
-    folium_static(mapa)
-
-elif page == "Paragon":
-    st.subheader("Skanowanie paragonu")
-    upload = st.file_uploader("Dodaj obraz", type=["png", "jpg", "jpeg"])
-    if upload:
-        img = Image.open(upload)
-        st.image(img, use_column_width=True)
-        text = pytesseract.image_to_string(img)
-        st.text_area("Odczytany tekst", text)
-
-        if st.button("Dodaj z paragonu"):
-            for line in text.splitlines():
-                if line.strip():
-                    new_row = pd.DataFrame([[line.strip(), 1.0, "szt.", today, 0.0]], columns=df.columns)
-                    st.session_state.products = pd.concat([st.session_state.products, new_row], ignore_index=True)
-            save_data(st.session_state.products)
-            st.success("Dodano z paragonu")
-
-elif page == "Eurostat":
-    st.subheader("Dane Eurostat")
+if page == "📚 Porady i Edukacja":
+    st.subheader("🧠 Edukacja i motywacja")
+    st.markdown("## Dlaczego warto nie marnować żywności?")
+    st.image("https://source.unsplash.com/800x300/?food,waste")
     st.markdown("""
-    - Gospodarstwa domowe odpowiadają za **54%** marnowanej żywności w UE (ok. **72 kg/osoba/rok**).
-    - Całkowite marnotrawstwo żywności w UE: **132 kg/osoba/rok**.
-    - Najczęściej marnowane: warzywa, pieczywo, owoce.
-    - Ślad węglowy marnotrawstwa: **8-10% emisji globalnych gazów cieplarnianych**.
+    - 🌍 **Marnowanie żywności = marnowanie zasobów**: wody, energii, pracy.
+    - 💸 **Każdy kilogram jedzenia to średnio 5-10 zł** – miej to na uwadze.
+    - 📉 **Twoje wybory mają znaczenie** – mniej odpadów = mniejszy ślad węglowy.
+    
+    **Porady praktyczne:**
+    - Planuj tygodniowe menu 📅
+    - Używaj oznaczeń (data otwarcia!) 🏷️
+    - Ogranicz impulsywne zakupy 🛒
+    - Gotuj z resztek! 🍲
+    
+    **Motywacja:**
+    > "Kupujesz, by wyrzucić? Nie inwestuj w śmietnik!"
+    
+    **Odznaki do zdobycia:**
+    - 🥇 "7 dni bez marnowania"
+    - 🥈 "Uratowane 5 kg jedzenia"
+    - 🥉 "Zaoszczędzono 50 zł"
     """)
-    fig = px.pie(names=["Gospodarstwa domowe", "Gastronomia", "Handel", "Przemysł"],
-                 values=[54, 11, 8, 27],
-                 title="Udział sektorów w marnotrawstwie żywności w UE")
+
+if page == "📊 Statystyki":
+    st.subheader("📊 Twoje statystyki")
+    total = len(st.session_state.products)
+    expiring_today = sum(1 for p in st.session_state.products if p["Data ważności"] == today)
+    saved_value = round(st.session_state.saved_money, 2)
+    saved_kg = round(st.session_state.saved_kg, 2)
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("📦 Produkty", total)
+    col2.metric("💰 Zaoszczędzono", f"{saved_value} zł")
+    col3.metric("🌿 Uratowano jedzenia", f"{saved_kg} kg")
+
+    data = pd.DataFrame({
+        "Kategorie": ["Uratowane kg", "Zaoszczędzone zł"],
+        "Wartości": [saved_kg, saved_value]
+    })
+    fig = px.bar(data, x="Kategorie", y="Wartości", color="Kategorie", title="Oszczędności i ratunek")
     st.plotly_chart(fig)
 
-# Koniec aplikacji
+if page == "🍽️ Przepisy":
+    st.subheader("🍽️ Dopasowane przepisy")
+    from random import choice
+    dieta_uzytkownika = []
+    for p in st.session_state.products:
+        dieta_uzytkownika += p.get("Dieta", [])
 
+    produkty = [p["Nazwa"].lower() for p in st.session_state.products if p["Data ważności"] <= today + datetime.timedelta(days=3)]
+    przepisy = {
+        "banany": ("Chlebek bananowy", "https://source.unsplash.com/600x400/?banana,bread", ["wegetariańska"]),
+        "jajka": ("Omlet warzywny", "https://source.unsplash.com/600x400/?omelette", ["bezglutenowa"]),
+        "chleb": ("Grzanki czosnkowe", "https://source.unsplash.com/600x400/?garlic,bread", ["wegetariańska"])
+    }
+    matched = False
+    for p in produkty:
+        if p in przepisy:
+            desc, img, tags = przepisy[p]
+            if not dieta_uzytkownika or any(d in dieta_uzytkownika for d in tags):
+                st.image(img, use_column_width=True)
+                st.markdown(f"### 🍽️ {desc}")
+                matched = True
+    if not matched:
+        st.warning("Brak pasujących przepisów. Dodaj produkty lub określ preferencje diety.")
+
+if page == "🎮 Grywalizacja":
+    st.subheader("🎮 Twoje osiągnięcia")
+    badges = [
+        ("🥇", "7 dni bez marnowania"),
+        ("🥈", "Uratowane 5 kg jedzenia"),
+        ("🥉", "Zaoszczędzono 50 zł")
+    ]
+    for emoji, title in badges:
+        st.markdown(f"{emoji} **{title}**")
+    st.info("Zbieraj odznaki za swoje działania i ratuj planetę z klasą!")
+
+if page == "📍 Mapa lodówek":
+    st.subheader("📍 Społeczne lodówki i punkty oddawania")
+    map = folium.Map(location=[52.2297, 21.0122], zoom_start=12)
+    folium.Marker([52.23, 21.01], popup="Lodówka społeczna - Śródmieście").add_to(map)
+    folium.Marker([52.24, 21.015], popup="NGO: Bank Żywności").add_to(map)
+    folium_static(map)
+
+if page == "📷 Skanowanie Paragonu":
+    st.subheader("📷 Skanowanie paragonu")
+    uploaded_file = st.file_uploader("Wybierz obraz", type=["png", "jpg", "jpeg"])
+    if uploaded_file:
+        image = Image.open(uploaded_file)
+        st.image(image, caption="Wczytany obraz", use_column_width=True)
+        text = pytesseract.image_to_string(image)
+        st.text_area("Rozpoznany tekst", text)
+        if st.button("Dodaj do listy"):
+            for line in text.splitlines():
+                if line.strip():
+                    st.session_state.products.append({
+                        "Nazwa": line.strip(),
+                        "Ilość": 1.0,
+                        "Jednostka": "szt.",
+                        "Data ważności": today + datetime.timedelta(days=3),
+                        "Dieta": []
+                    })
+            st.success("Dodano produkty z paragonu")
